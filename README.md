@@ -15,6 +15,22 @@ This is a python script for a Telegram chatbot that uses the OpenAI API to gener
 3. Run the script with the command python chatbot.py
 4. Add the bot to a Telegram group, make sure he has ADMIN priviledges, and mention the bot's username in a message to generate a response from the OpenAI API.
 
+## Docker Compose
+
+```
+  openaibot:
+    image: python:latest
+    container_name: openaibot
+    environment:
+      - PUID=1000
+      - PGID=1002
+    volumes:
+      - /data/config/telegramChatGPT:/.local
+    working_dir: /.local/OPENAI
+    restart: unless-stopped
+    command: ./init.sh
+```
+
 ## Functionality
 ### Imports and setup
 1. The script starts by importing the necessary libraries and setting up the API clients.
