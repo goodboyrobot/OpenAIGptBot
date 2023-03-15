@@ -3,17 +3,13 @@ import requests
 import json
 import os
 import threading
+# import credentials from creds.py
+from creds import BOT_TOKEN, API_KEY, CHATBOT_HANDLE 
 
-# OpenAI secret Key
-API_KEY = 'xxxxxxxxxxxsecretAPIxxxxxxxxxx'
 # Models: text-davinci-003,text-curie-001,text-babbage-001,text-ada-001
 MODEL = 'gpt-3.5-turbo'
-# Telegram secret access bot token
-BOT_TOKEN = 'xxxxxxbotapikeyxxxxx'
 # Defining the bot's personality using adjectives
-BOT_PERSONALITY = 'Answer in a funny tone, '
-# Specify your Chat Bot handle
-CHATBOT_HANDLE = '@ask_chatgptbot'
+BOT_PERSONALITY = 'Answer in a humorous tone, '
 
 # 2a. Function that gets the response from OpenAI's chatbot
 def openAI(prompt):
