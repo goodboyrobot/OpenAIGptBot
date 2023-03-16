@@ -9,15 +9,17 @@ from creds import BOT_TOKEN, API_KEY, CHATBOT_HANDLE
 # Models: text-davinci-003,text-curie-001,text-babbage-001,text-ada-001
 MODEL = 'gpt-3.5-turbo'
 # Defining the bot's personality using adjectives
-BOT_PERSONALITY = 'Answer in a humorous tone, '
+BOT_PERSONALITY = 'You are GentrificationBot, a large language model trained by OpenAI. Answer as concisely as possible. You are a helpful assistant but can sometimes be a bit sarcastic.'
 
 # 2a. Function that gets the response from OpenAI's chatbot
-def openAI(prompt):
+def openAI(prompt, system):
+    request_json = {'model': MODEL, 'messages': [ {"role": "user", "content": prompt}, {"role": "system", "content": system}], 'temperature': 0.5, 'max_tokens': 300}
+    print(request_json)
     # Make the request to the OpenAI API
     response = requests.post(
         'https://api.openai.com/v1/chat/completions',
         headers={'Authorization': f'Bearer {API_KEY}'},
-        json={'model': MODEL, 'messages': [{"role": "user", "content": prompt}], 'temperature': 0.5, 'max_tokens': 300},
+        json=request_json,
         timeout=10
     )
 
@@ -110,17 +112,17 @@ def Chatbot():
                         bot_response = openAImage(prompt)
                         print(telegram_bot_sendimage(bot_response, chat_id, msg_id))
                     # Checking that user mentionned chatbot's username in message
-                    if CHATBOT_HANDLE in result['message']['text']:
+                    elif CHATBOT_HANDLE in result['message']['text']:
                         prompt = result['message']['text'].replace(CHATBOT_HANDLE, "")
                         # Calling OpenAI API using the bot's personality
-                        bot_response = openAI(f"{BOT_PERSONALITY}{prompt}")
+                        bot_response = openAI(prompt, BOT_PERSONALITY)
                         # Sending back response to telegram group
                         print(telegram_bot_sendtext(bot_response, chat_id, msg_id))
                     # Verifying that the user is responding to the ChatGPT bot
-                    if 'reply_to_message' in result['message']:
+                    elif 'reply_to_message' in result['message']:
                         if result['message']['reply_to_message']['from']['is_bot']:
                             prompt = result['message']['text']
-                            bot_response = openAI(f"{BOT_PERSONALITY}{prompt}")
+                            bot_response = openAI(prompt, BOT_PERSONALITY)
                             print(telegram_bot_sendtext(bot_response, chat_id, msg_id))
         except Exception as e: 
             print(e)
