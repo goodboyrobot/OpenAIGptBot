@@ -7,23 +7,40 @@ import threading
 from creds import BOT_TOKEN, API_KEY, CHATBOT_HANDLE 
 
 # Models: text-davinci-003,text-curie-001,text-babbage-001,text-ada-001
-MODEL = 'gpt-3.5-turbo'
+MODEL = 'gpt-4'
 # Defining the bot's personality using adjectives
 BOT_PERSONALITY = 'You are GentrificationBot, a large language model trained by OpenAI. Answer as concisely as possible. You are a helpful assistant but can sometimes be a bit sarcastic.'
 
+#Definite the maximum number of previous request response pairs to remember. Larger numbers increase the risk of hitting the token limit
+MAX_CONTEXT_PAIRS = 5
+
+previous_requests = []
+previous_responses = []
+
 # 2a. Function that gets the response from OpenAI's chatbot
 def openAI(prompt, system):
-    request_json = {'model': MODEL, 'messages': [ {"role": "user", "content": prompt}, {"role": "system", "content": system}], 'temperature': 0.5, 'max_tokens': 300}
-    print(request_json)
+    global previous_requests
+    global previous_responses
+    messages = []
+    messages.append({"role": "system", "content": system});
+    # Append all previous requests
+    for i in range(len(previous_requests)):
+        messages.append({"role": "user", "content": previous_requests[i]})
+        messages.append({"role": "assistant", "content": previous_responses[i]})
+    #finally add the actual prompt
+    messages.append({"role": "user", "content": prompt})
+    request_json = {'model': MODEL, 'messages': messages, 'temperature': 0.5, 'max_tokens': 4096}
+    print("OpenAI Request:", request_json)
     # Make the request to the OpenAI API
     response = requests.post(
         'https://api.openai.com/v1/chat/completions',
         headers={'Authorization': f'Bearer {API_KEY}'},
         json=request_json,
-        timeout=10
+        timeout=600
     )
 
     result=response.json()
+    print("OpenAI Response:", result)
     
     final_result=''
     for i in range(0,len(result['choices'])):
@@ -38,7 +55,7 @@ def openAImage(prompt):
         'https://api.openai.com/v1/images/generations',
         headers={'Authorization': f'Bearer {API_KEY}'},
         json={'prompt': prompt,'n' : 1, 'size': '1024x1024'},
-        timeout=10
+        timeout=600
     )
     response_text = json.loads(resp.text)
       
@@ -69,10 +86,25 @@ def telegram_bot_sendimage(image_url, group_id, msg_id):
     
     response = requests.post(url, data=data, timeout=5)
     return response.json()
+
+#3c. Store context
+def store_context(request, response):
+  global previous_requests
+  global previous_responses
   
+  previous_requests.append(request)
+  previous_responses.append(response)
+  if len(previous_requests) > MAX_CONTEXT_PAIRS:
+      previous_requests.pop(0)
+  if len(previous_responses) > MAX_CONTEXT_PAIRS:
+      previous_responses.pop(0)
+
+
 # 4. Function that retrieves the latest requests from users in a Telegram group, 
 # generates a response using OpenAI, and sends the response back to the group.
 def Chatbot():
+    global last_request
+    global last_response
     # Retrieve last ID message from text file for ChatGPT update
     cwd = os.getcwd()
     filename = cwd + '/chatgpt.txt'
@@ -90,7 +122,7 @@ def Chatbot():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset={last_update}'
     response = requests.get(url, timeout=5)
     data = json.loads(response.content)
-    print(data)   
+    #print(data)   
     
     for result in data['result']:
         try:
@@ -116,6 +148,7 @@ def Chatbot():
                         prompt = result['message']['text'].replace(CHATBOT_HANDLE, "")
                         # Calling OpenAI API using the bot's personality
                         bot_response = openAI(prompt, BOT_PERSONALITY)
+                        store_context(prompt, bot_response)
                         # Sending back response to telegram group
                         print(telegram_bot_sendtext(bot_response, chat_id, msg_id))
                     # Verifying that the user is responding to the ChatGPT bot
@@ -123,6 +156,7 @@ def Chatbot():
                         if result['message']['reply_to_message']['from']['is_bot']:
                             prompt = result['message']['text']
                             bot_response = openAI(prompt, BOT_PERSONALITY)
+                            store_context(prompt, bot_response)
                             print(telegram_bot_sendtext(bot_response, chat_id, msg_id))
         except Exception as e: 
             print(e)
