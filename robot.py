@@ -153,7 +153,8 @@ def Chatbot():
                         print(telegram_bot_sendtext(bot_response, chat_id, msg_id))
                     # Verifying that the user is responding to the ChatGPT bot
                     elif 'reply_to_message' in result['message']:
-                        if result['message']['reply_to_message']['from']['is_bot']:
+                        parent_msg = result['message']['reply_to_message']
+                        if parent_msg['from']['is_bot'] and parent_msg['text']:
                             prompt = result['message']['text']
                             bot_response = openAI(prompt, BOT_PERSONALITY)
                             store_context(prompt, bot_response)
