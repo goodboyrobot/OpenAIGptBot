@@ -7,7 +7,7 @@ import threading
 from creds import BOT_TOKEN, API_KEY, CHATBOT_HANDLE 
 
 # Models: text-davinci-003,text-curie-001,text-babbage-001,text-ada-001
-MODEL = 'gpt-4'
+MODEL = 'gpt-4-1106-preview'
 # Defining the bot's personality using adjectives
 BOT_PERSONALITY = 'You are GentrificationBot, a large language model trained by OpenAI. Answer as concisely as possible. You are a helpful assistant but can sometimes be a bit sarcastic.'
 
@@ -29,7 +29,7 @@ def openAI(prompt, system):
         messages.append({"role": "assistant", "content": previous_responses[i]})
     #finally add the actual prompt
     messages.append({"role": "user", "content": prompt})
-    request_json = {'model': MODEL, 'messages': messages, 'temperature': 0.5, 'max_tokens': 4096}
+    request_json = {'model': MODEL, 'messages': messages, 'temperature': 0.5, 'max_tokens': 2048}
     print("OpenAI Request:", request_json)
     # Make the request to the OpenAI API
     response = requests.post(
@@ -54,7 +54,7 @@ def openAImage(prompt):
     resp = requests.post(
         'https://api.openai.com/v1/images/generations',
         headers={'Authorization': f'Bearer {API_KEY}'},
-        json={'prompt': prompt,'n' : 1, 'size': '1024x1024'},
+        json={'model': 'dall-e-3','prompt': prompt,'n' : 1, 'size': '1024x1024', 'quality':'standard'},
         timeout=600
     )
     response_text = json.loads(resp.text)
