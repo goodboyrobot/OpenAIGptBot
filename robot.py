@@ -3,13 +3,14 @@ import requests
 import json
 import os
 import threading
+import re
 # import credentials from creds.py
 from creds import BOT_TOKEN, API_KEY, CHATBOT_HANDLE 
 
 # Models: text-davinci-003,text-curie-001,text-babbage-001,text-ada-001
-MODEL = 'gpt-4-1106-preview'
+MODEL = 'gpt-4o'
 # Defining the bot's personality using adjectives
-BOT_PERSONALITY = 'You are GentrificationBot, a large language model trained by OpenAI. Answer as concisely as possible. You are a helpful assistant but can sometimes be a bit sarcastic.'
+BOT_PERSONALITY = 'You are GentrificationBot, a large language model trained by OpenAI. Answer as concisely as possible.'
 
 #Definite the maximum number of previous request response pairs to remember. Larger numbers increase the risk of hitting the token limit
 MAX_CONTEXT_PAIRS = 5
@@ -63,10 +64,13 @@ def openAImage(prompt):
   
 # 3a. Function that sends a message to a specific telegram group
 def telegram_bot_sendtext(bot_message,chat_id,msg_id):
+    escaped_msg = re.escape(bot_message)
+
     data = {
         'chat_id': chat_id,
-        'text': bot_message,
-        'reply_to_message_id': msg_id
+        'text': escaped_msg,
+        'reply_to_message_id': msg_id,
+        'parse_mode':'MarkdownV2'
     }
     response = requests.post(
         'https://api.telegram.org/bot' + BOT_TOKEN + '/sendMessage',
@@ -122,7 +126,7 @@ def Chatbot():
     url = f'https://api.telegram.org/bot{BOT_TOKEN}/getUpdates?offset={last_update}'
     response = requests.get(url, timeout=5)
     data = json.loads(response.content)
-    #print(data)   
+    print(data)   
     
     for result in data['result']:
         try:
